@@ -3,7 +3,6 @@ package translator
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"github.com/mvader/trevor"
 	"io/ioutil"
 	"net/http"
@@ -110,7 +109,6 @@ func getWordAndLang(text string) (string, string, bool) {
 
 	if translateToRegExp.MatchString(text) {
 		matches := translateToRegExp.FindStringSubmatch(text)
-		fmt.Println(matches)
 		return matches[1], matches[3], true
 	} else if howDoYouSayRegExp.MatchString(text) {
 		matches := howDoYouSayRegExp.FindStringSubmatch(text)
