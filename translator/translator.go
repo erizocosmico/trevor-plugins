@@ -17,17 +17,31 @@ type translatorPlugin struct {
 
 var (
 	translateToRegExp = regexp.MustCompile(`^translate (.+) (to|in) (.+)$`)
-	howDoYouSayRegExp = regexp.MustCompile(`^how do you say (.+) in (.+)\??$`)
+	howDoYouSayRegExp = regexp.MustCompile(`^how (do you|would you|can i) say (.+) in ([^\?.]+)\??$`)
 
 	// translator can only return exact match or no match at all
 	matchScore   = trevor.NewScore(10.0, true)
 	noMatchScore = trevor.NewScore(0.0, false)
 
-	// TODO: Add more
 	langCodes = map[string]string{
-		"spanish": "es",
-		"russian": "ru",
-		"english": "en",
+		"spanish":    "es",
+		"russian":    "ru",
+		"english":    "en",
+		"portuguese": "pt",
+		"turkish":    "tk",
+		"swedish":    "sv",
+		"slovenian":  "sl",
+		"romanian":   "ro",
+		"norwegian":  "no",
+		"dutch":      "nl",
+		"lithuanian": "lt",
+		"korean":     "ko",
+		"japanese":   "ja",
+		"german":     "de",
+		"french":     "fr",
+		"finnish":    "fi",
+		"danish":     "da",
+		"chinese":    "zh",
 	}
 )
 
@@ -36,38 +50,41 @@ func NewTranslator(apiKey string) trevor.Plugin {
 	return &translatorPlugin{key: apiKey}
 }
 
-func (t *translatorPlugin) Analyze(text string) trevor.Score {
-	_, lang, ok := getWordAndLang(text)
+func (t *translatorPlugin) Analyze(text string) (trevor.Score, interface{}) {
+	word, lang, ok := getWordAndLang(text)
 	if _, err := getLangCode(lang); ok && err == nil {
-		return matchScore
+		return matchScore, map[string]string{
+			"word": word,
+			"lang": lang,
+		}
 	}
 
-	return noMatchScore
+	return noMatchScore, nil
 }
 
-func (t *translatorPlugin) Process(text string) (interface{}, error) {
-	word, lang, ok := getWordAndLang(text)
-	if !ok {
-		return nil, errors.New("can't process text '" + text + "'")
+func (t *translatorPlugin) Process(text string, metadata interface{}) (interface{}, error) {
+	if meta, ok := metadata.(map[string]string); ok {
+		lang, word := meta["lang"], meta["word"]
+		lang, err := getLangCode(lang)
+		if err != nil {
+			return nil, err
+		}
+
+		response, err := t.request(word, lang)
+		if err != nil {
+			return nil, err
+		}
+
+		var result map[string]interface{}
+		err = json.Unmarshal(response, &result)
+		if err != nil {
+			return nil, err
+		}
+
+		return result, nil
 	}
 
-	lang, err := getLangCode(lang)
-	if err != nil {
-		return nil, err
-	}
-
-	response, err := t.request(word, lang)
-	if err != nil {
-		return nil, err
-	}
-
-	var result map[string]interface{}
-	err = json.Unmarshal(response, &result)
-	if err != nil {
-		return nil, err
-	}
-
-	return result, nil
+	return nil, errors.New("can't process text '" + text + "'")
 }
 
 func (t *translatorPlugin) Name() string {
@@ -109,10 +126,10 @@ func getWordAndLang(text string) (string, string, bool) {
 
 	if translateToRegExp.MatchString(text) {
 		matches := translateToRegExp.FindStringSubmatch(text)
-		return matches[1], matches[3], true
+		return strings.TrimSpace(matches[1]), strings.TrimSpace(matches[3]), true
 	} else if howDoYouSayRegExp.MatchString(text) {
 		matches := howDoYouSayRegExp.FindStringSubmatch(text)
-		return matches[1], matches[2], true
+		return strings.TrimSpace(matches[2]), strings.TrimSpace(matches[3]), true
 	}
 
 	return "", "", false
