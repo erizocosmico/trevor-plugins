@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/mvader/trevor"
+	"gopkg.in/mvader/trevor.v1"
 	"io/ioutil"
 	"net/http"
 	"os"

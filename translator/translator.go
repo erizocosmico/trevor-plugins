@@ -50,8 +50,8 @@ func NewTranslator(apiKey string) trevor.Plugin {
 	return &translatorPlugin{key: apiKey}
 }
 
-func (t *translatorPlugin) Analyze(text string) (trevor.Score, interface{}) {
-	word, lang, ok := getWordAndLang(text)
+func (t *translatorPlugin) Analyze(req *trevor.Request) (trevor.Score, interface{}) {
+	word, lang, ok := getWordAndLang(req.Text)
 	if _, err := getLangCode(lang); ok && err == nil {
 		return matchScore, map[string]string{
 			"word": word,
@@ -62,7 +62,7 @@ func (t *translatorPlugin) Analyze(text string) (trevor.Score, interface{}) {
 	return noMatchScore, nil
 }
 
-func (t *translatorPlugin) Process(text string, metadata interface{}) (interface{}, error) {
+func (t *translatorPlugin) Process(req *trevor.Request, metadata interface{}) (interface{}, error) {
 	if meta, ok := metadata.(map[string]string); ok {
 		lang, word := meta["lang"], meta["word"]
 		lang, err := getLangCode(lang)
@@ -84,7 +84,7 @@ func (t *translatorPlugin) Process(text string, metadata interface{}) (interface
 		return result, nil
 	}
 
-	return nil, errors.New("can't process text '" + text + "'")
+	return nil, errors.New("can't process text '" + req.Text + "'")
 }
 
 func (t *translatorPlugin) Name() string {
