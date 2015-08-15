@@ -3,7 +3,7 @@ package translator
 import (
 	"encoding/json"
 	"errors"
-	"github.com/mvader/trevor"
+	"gopkg.in/mvader/trevor.v1"
 	"io/ioutil"
 	"net/http"
 	"net/url"
